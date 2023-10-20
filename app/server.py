@@ -1,11 +1,14 @@
 import argparse
 import asyncio
+import logging
 import logging.config
 
 import prometheus_client
 from prometheus_client import start_http_server, Summary, Counter
 
 import ping
+
+logger = logging.getLogger("root")
 
 LATENCY = prometheus_client.Summary(
     "ping_latency",
@@ -50,15 +53,21 @@ def record(host: str, lat: float | None) -> None:
 
 async def start(hosts: list[str], ping_interval: float):
     prometheus_client.start_http_server(5000)
-
     for host in hosts:
         SENT.labels(host=host)
         DROPPED.labels(host=host)
         LATENCY.labels(host=host)
-        asyncio.ensure_future(ping.ping(host, record, ping_interval))
+    for retry in range(5):
+        if retry != 0:
+            logger.warning(f"Retrying {retry}")
+            await asyncio.sleep(retry)
+        aws = [asyncio.create_task(ping.ping(host, record, ping_interval), name=host) for host in hosts]
+        done, pending = await asyncio.wait(aws, return_when=asyncio.FIRST_COMPLETED)
+        logger.error(f"Tasks failed: {[task.get_name() for task in done]}")
+        for task in pending:
+            logger.warning(f"Cancelling {task.get_name()}")
+            task.cancel()
 
-    while True:
-        await asyncio.sleep(3600)
 
 
 if __name__ == "__main__":

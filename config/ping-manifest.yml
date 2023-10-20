@@ -1,3 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ping
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,11 +21,11 @@ spec:
         app: ping
     spec:
       containers:
-      - name: ping
-        image: mkolman/ping-service:v1.0.0
-        args: ["google.com", "live.com", "facebook.com"]
-        ports:
-        - containerPort: 5000
+        - name: ping
+          image: mkolman/ping-service:v1.0.1
+          args: ["google.com", "live.com", "facebook.com"]
+          ports:
+            - containerPort: 5000
 ---
 apiVersion: v1
 kind: Service
@@ -33,10 +38,10 @@ spec:
   selector:
     app: ping
   ports:
-  - name: ping-port
-    protocol: TCP
-    port: 5000
-    targetPort: 5000
+    - name: ping-port
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -50,4 +55,4 @@ spec:
     matchLabels:
       app: ping-service
   endpoints:
-  - port: ping-port
+    - port: ping-port

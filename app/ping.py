@@ -1,7 +1,6 @@
 import re
 import subprocess
 import math
-import datetime
 import asyncio
 import typing
 import logging
@@ -78,3 +77,4 @@ async def ping(
             logger.debug(data)
         else:
             logger.warn("Unprocessed line: %s", line.decode().strip())
+    logger.warn("Stopping ping subprocess for %s", host)
